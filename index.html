@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portafirmas</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="login-container">
+        <h2>Iniciar Sesión</h2>
+        <form id="login-form">
+            <label for="username">Usuario:</label>
+            <input type="text" id="username" name="username" required>
+            <label for="password">Contraseña:</label>
+            <input type="password" id="password" name="password" required>
+            <button type="submit">Ingresar</button>
+        </form>
+    </div>
+
+    <div id="portfolio-container" style="display: none;">
+        <h2>Portafirmas</h2>
+        <button id="logout-btn">Cerrar Sesión</button>
+        <button id="open-upload-dialog-btn">Subir Documento</button>
+        
+        <div id="signatures-list">
+            <!-- Lista de documentos para firmar -->
+        </div>
+        
+        <div id="upload-dialog" class="dialog" style="display: none;">
+            <form id="upload-form">
+                <label for="pdf-upload">Subir Archivo PDF:</label>
+                <input type="file" id="pdf-upload" name="pdf-upload" accept="application/pdf" required>
+                <label for="doc-details">Detalles del Documento:</label>
+                <input type="text" id="doc-details" name="doc-details" required>
+                <button type="submit">Subir</button>
+                <button type="button" id="close-upload-dialog-btn">Cancelar</button>
+            </form>
+        </div>
+        
+        <div id="preview-dialog" class="dialog" style="display: none;">
+            <h3>Vista Previa del PDF</h3>
+            <iframe id="pdf-preview" width="100%" height="500px"></iframe>
+            <div id="doc-info">
+                <h4>Detalles del Documento</h4>
+                <p id="doc-details-view"></p>
+                <button id="sign-btn">Firmar Documento</button>
+                <button type="button" id="close-preview-dialog-btn">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
