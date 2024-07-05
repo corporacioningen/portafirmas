@@ -1,7 +1,8 @@
+/* Versión 1.1 */
 <!DOCTYPE html>
 <html lang="es">
 <style>
-    body {
+   body {
     font-family: Arial, sans-serif;
     background-color: #f4f4f4;
     display: flex;
@@ -51,6 +52,16 @@
     width: 500px;
 }
 
+#upload-form {
+    margin-bottom: 20px;
+}
+
+#upload-form label, #upload-form input {
+    display: block;
+    width: 100%;
+    margin-bottom: 10px;
+}
+
 #signatures-list {
     margin-top: 20px;
 }
@@ -85,7 +96,7 @@
     color: #155724;
 }
 
-#logout-btn, #open-upload-dialog-btn {
+#logout-btn {
     padding: 10px;
     background-color: #FF6347;
     color: white;
@@ -95,27 +106,19 @@
     margin-bottom: 20px;
 }
 
-#logout-btn:hover, #open-upload-dialog-btn:hover {
+#logout-btn:hover {
     background-color: #FF4500;
 }
 
-.dialog {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background-color: white;
-    padding: 20px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    border-radius: 5px;
-    z-index: 10;
+#pdf-container {
+    margin-top: 20px;
 }
 
 #doc-info {
     margin-top: 20px;
 }
 
-#sign-btn, #close-preview-dialog-btn, #close-upload-dialog-btn {
+#sign-btn {
     padding: 10px;
     background-color: #28a745;
     color: white;
@@ -125,13 +128,16 @@
     margin-top: 10px;
 }
 
-#sign-btn:hover, #close-preview-dialog-btn:hover, #close-upload-dialog-btn:hover {
+#sign-btn:hover {
     background-color: #218838;
 }
 
 </style>
 <script>
-    document.getElementById('login-form').addEventListener('submit', function(event) {
+    // Variable para almacenar los documentos firmados por sesión de usuario
+let signedDocuments = [];
+
+document.getElementById('login-form').addEventListener('submit', function(event) {
     event.preventDefault();
     const username = document.getElementById('username').value;
     const password = document.getElementById('password').value;
@@ -151,105 +157,115 @@ document.getElementById('logout-btn').addEventListener('click', function() {
     document.getElementById('login-container').style.display = 'block';
 });
 
-// Manejo de cuadros de diálogo
-document.getElementById('open-upload-dialog-btn').addEventListener('click', function() {
-    document.getElementById('upload-dialog').style.display = 'block';
+document.getElementById('upload-btn').addEventListener('click', function() {
+    document.getElementById('upload-form').style.display = 'block';
 });
 
-document.getElementById('close-upload-dialog-btn').addEventListener('click', function() {
-    document.getElementById('upload-dialog').style.display = 'none';
-});
-
-document.getElementById('close-preview-dialog-btn').addEventListener('click', function() {
-    document.getElementById('preview-dialog').style.display = 'none';
-});
-
-// Manejo de la subida de archivos y detalles
 document.getElementById('upload-form').addEventListener('submit', function(event) {
     event.preventDefault();
     const fileInput = document.getElementById('pdf-upload');
     const file = fileInput.files[0];
     const docDetails = document.getElementById('doc-details').value;
-
+    
     if (file && file.type === 'application/pdf') {
         const fileURL = URL.createObjectURL(file);
+        const signaturesList = document.getElementById('signatures-list');
+        const div = document.createElement('div');
+        div.className = 'signature-item';
+        
+        const docName = document.createElement('span');
+        docName.textContent = file.name;
+        
+        const viewButton = document.createElement('button');
+        viewButton.textContent = 'Ver';
+
         const documentData = {
             name: file.name,
             details: docDetails,
             fileURL: fileURL,
             signed: false
         };
+        
+        viewButton.addEventListener('click', function() {
+            document.getElementById('pdf-preview').src = documentData.fileURL;
+            document.getElementById('doc-details-view').textContent = documentData.details;
+            document.getElementById('pdf-container').style.display = 'block';
+            document.getElementById('sign-btn').disabled = documentData.signed;
 
-        let documents = JSON.parse(localStorage.getItem('documents')) || [];
-        documents.push(documentData);
-        localStorage.setItem('documents', JSON.stringify(documents));
+            document.getElementById('sign-btn').addEventListener('click', function() {
+                documentData.signed = true;
+                div.classList.add('signed');
+                document.getElementById('sign-btn').textContent = 'Firmado';
+                document.getElementById('sign-btn').disabled = true;
+                viewButton.disabled = true;
 
-        addDocumentToList(documentData);
+                // Guardar documento firmado en la sesión actual
+                signedDocuments.push(documentData);
+                saveSignedDocuments();
+            });
+        });
+
+        div.appendChild(docName);
+        div.appendChild(viewButton);
+        signaturesList.appendChild(div);
+        
         fileInput.value = '';  // Clear the file input
         document.getElementById('doc-details').value = '';  // Clear the details input
-        document.getElementById('upload-dialog').style.display = 'none';
     } else {
         alert('Por favor suba un archivo PDF válido.');
     }
 });
 
 function loadSignatures() {
+    const savedDocuments = JSON.parse(localStorage.getItem('signedDocuments')) || [];
+    signedDocuments = savedDocuments;
+
     const signaturesList = document.getElementById('signatures-list');
     signaturesList.innerHTML = '';
 
-    let documents = JSON.parse(localStorage.getItem('documents')) || [];
+    signedDocuments.forEach(doc => {
+        const div = document.createElement('div');
+        div.className = 'signature-item';
+        if (doc.signed) {
+            div.classList.add('signed');
+        }
 
-    documents.forEach(doc => {
-        addDocumentToList(doc);
+        const docName = document.createElement('span');
+        docName.textContent = doc.name;
+
+        const viewButton = document.createElement('button');
+        viewButton.textContent = 'Ver';
+        viewButton.disabled = doc.signed;
+
+        viewButton.addEventListener('click', function() {
+            document.getElementById('pdf-preview').src = doc.fileURL;
+            document.getElementById('doc-details-view').textContent = doc.details;
+            document.getElementById('pdf-container').style.display = 'block';
+            document.getElementById('sign-btn').disabled = doc.signed;
+
+            document.getElementById('sign-btn').addEventListener('click', function() {
+                doc.signed = true;
+                div.classList.add('signed');
+                document.getElementById('sign-btn').textContent = 'Firmado';
+                document.getElementById('sign-btn').disabled = true;
+                viewButton.disabled = true;
+
+                saveSignedDocuments();
+            });
+        });
+
+        div.appendChild(docName);
+        div.appendChild(viewButton);
+        signaturesList.appendChild(div);
     });
 }
 
-function addDocumentToList(documentData) {
-    const signaturesList = document.getElementById('signatures-list');
-    const div = document.createElement('div');
-    div.className = 'signature-item';
-    if (documentData.signed) {
-        div.classList.add('signed');
-    }
-
-    const docName = document.createElement('span');
-    docName.textContent = documentData.name;
-
-    const viewButton = document.createElement('button');
-    viewButton.textContent = 'Ver';
-    viewButton.disabled = documentData.signed;
-
-    viewButton.addEventListener('click', function() {
-        document.getElementById('pdf-preview').src = documentData.fileURL;
-        document.getElementById('doc-details-view').textContent = documentData.details;
-        document.getElementById('preview-dialog').style.display = 'block';
-        document.getElementById('sign-btn').textContent = 'Firmar Documento';
-        document.getElementById('sign-btn').disabled = documentData.signed;
-
-        document.getElementById('sign-btn').onclick = function() {
-            documentData.signed = true;
-            div.classList.add('signed');
-            document.getElementById('sign-btn').textContent = 'Firmado';
-            document.getElementById('sign-btn').disabled = true;
-            viewButton.disabled = true;
-
-            let documents = JSON.parse(localStorage.getItem('documents')) || [];
-            documents = documents.map(doc => {
-                if (doc.name === documentData.name) {
-                    return documentData;
-                }
-                return doc;
-            });
-            localStorage.setItem('documents', JSON.stringify(documents));
-        };
-    });
-
-    div.appendChild(docName);
-    div.appendChild(viewButton);
-    signaturesList.appendChild(div);
+function saveSignedDocuments() {
+    localStorage.setItem('signedDocuments', JSON.stringify(signedDocuments));
 }
 
 </script>
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -271,31 +287,28 @@ function addDocumentToList(documentData) {
     <div id="portfolio-container" style="display: none;">
         <h2>Portafirmas</h2>
         <button id="logout-btn">Cerrar Sesión</button>
-        <button id="open-upload-dialog-btn">Subir Documento</button>
+        
+        <button id="upload-btn">Subir Documento</button>
+        
+        <form id="upload-form" style="display: none;">
+            <label for="pdf-upload">Subir Archivo PDF:</label>
+            <input type="file" id="pdf-upload" name="pdf-upload" accept="application/pdf" required>
+            <label for="doc-details">Detalles del Documento:</label>
+            <input type="text" id="doc-details" name="doc-details" required>
+            <button type="submit">Subir</button>
+        </form>
         
         <div id="signatures-list">
             <!-- Lista de documentos para firmar -->
         </div>
         
-        <div id="upload-dialog" class="dialog" style="display: none;">
-            <form id="upload-form">
-                <label for="pdf-upload">Subir Archivo PDF:</label>
-                <input type="file" id="pdf-upload" name="pdf-upload" accept="application/pdf" required>
-                <label for="doc-details">Detalles del Documento:</label>
-                <input type="text" id="doc-details" name="doc-details" required>
-                <button type="submit">Subir</button>
-                <button type="button" id="close-upload-dialog-btn">Cancelar</button>
-            </form>
-        </div>
-        
-        <div id="preview-dialog" class="dialog" style="display: none;">
+        <div id="pdf-container" style="display: none;">
             <h3>Vista Previa del PDF</h3>
             <iframe id="pdf-preview" width="100%" height="500px"></iframe>
             <div id="doc-info">
                 <h4>Detalles del Documento</h4>
                 <p id="doc-details-view"></p>
                 <button id="sign-btn">Firmar Documento</button>
-                <button type="button" id="close-preview-dialog-btn">Cerrar</button>
             </div>
         </div>
     </div>
